@@ -15,8 +15,8 @@ Du lieu mau hien co:
 
 - 16 van ban mau de thu nhanh tren giao dien.
 - 108 van ban huan luyen co nhan, moi nhan co 27 van ban.
-- 378 tu/cum trong tap tu vung dac trung sau tien xu ly.
-- 288 cum tu trong tu dien ngu nghia va 33 tu don dac trung de ho tro fallback.
+- 321 tu/cum trong tap tu vung dac trung sau tien xu ly.
+- 236 cum tu trong tu dien ngu nghia va 33 tu don dac trung de ho tro fallback.
 
 ## Cai dat
 
@@ -87,7 +87,7 @@ requirements.txt       Thu vien can cai
    - Tinh xac suat tien nghiem cua tung nhan.
    - Tinh xac suat tu/cum theo tung nhan.
    - Dung Laplace smoothing de xu ly tu chua gap.
-   - Dung log probability de tranh tran/qua nho so.
+   - Nhan cac xac suat thanh phan de tinh diem cho tung nhan theo cong thuc Naive Bayes co ban.
 
 5. Giai thich ket qua:
    - Hien thi van ban da tach tu/cum theo ngu nghia.
@@ -135,4 +135,4 @@ requirements.txt       Thu vien can cai
 - Xu ly chuoi: lowercase, regular expression, xoa ky tu dac biet.
 - Tien xu ly ngon ngu tu nhien: tach tu, stop words, chuan hoa van ban.
 - Bag of Words: bieu dien van ban bang tan suat tu.
-- Naive Bayes: prior, likelihood, Laplace smoothing, log probability.
+- Naive Bayes: prior, likelihood, Laplace smoothing, nhan xac suat thanh phan.

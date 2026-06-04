@@ -1,4 +1,3 @@
-import math
 import re
 from collections import Counter
 
@@ -22,7 +21,6 @@ STOP_WORDS = {
     "đã",
     "để",
     "được",
-    "giá",
     "hỏi",
     "không",
     "là",
@@ -31,7 +29,6 @@ STOP_WORDS = {
     "mình",
     "mới",
     "một",
-    "mua",
     "nào",
     "người",
     "nhiều",
@@ -45,12 +42,14 @@ STOP_WORDS = {
     "xin",
 }
 
+# Tu dien chi nen gom cac don vi co nghia, tranh gom ca menh de/cau dai.
 SEMANTIC_PHRASES = {
     "24 inch",
     "âm thanh",
     "bài đăng",
     "bài hát",
     "bài học",
+    "bài giảng",
     "bài nhạc",
     "bài thực hành",
     "bài thuyết trình",
@@ -59,30 +58,23 @@ SEMANTIC_PHRASES = {
     "bàn phím",
     "bàn phím cơ",
     "balo laptop",
-    "bán ghế",
-    "bán laptop",
-    "bán màn hình",
-    "bán điện thoại",
     "bảo hành",
     "bắt đầu",
     "bộ phim",
     "bóng đá",
+    "bị khóa",
     "ca nhạc",
     "cà phê",
     "cài đặt",
-    "cài đặt môi trường",
     "cách sửa",
     "chắc chắn",
     "chia sẻ",
     "chơi game",
     "chương trình",
-    "chương trình ca nhạc",
     "chương trình hài",
-    "chương trình python",
     "cosplay",
     "cơ bản",
     "cơ sở dữ liệu",
-    "cuối tuần này",
     "cuối tuần",
     "cũ giá rẻ",
     "cấu hình ổn",
@@ -90,13 +82,11 @@ SEMANTIC_PHRASES = {
     "dell cũ",
     "đăng nhập",
     "đăng ký",
-    "đề cương ôn thi",
     "đề cương",
     "đề xuất",
     "địa chỉ",
     "điện thoại",
     "điện thoại cũ",
-    "điện thoại không nhận sạc",
     "độ tin cậy",
     "đông vui",
     "đổi mật khẩu",
@@ -112,134 +102,93 @@ SEMANTIC_PHRASES = {
     "giá sinh viên",
     "giá thương lượng",
     "giá tốt",
-    "giáo trình xử lý ngôn ngữ tự nhiên",
     "giáo trình",
+    "giấy xác nhận",
     "giấy xác nhận sinh viên",
+    "gõ được",
+    "gửi được",
     "giờ học",
     "giờ làm",
     "hà nội",
     "hài nhẹ nhàng",
-    "hình xanh windows",
-    "học html css",
-    "học lập trình",
     "học mỗi ngày",
     "học python",
-    "học python cơ bản",
     "học tập",
     "học tiếng anh",
-    "học xử lý ngôn ngữ tự nhiên",
     "khá hay",
     "khá vui",
     "kết nối wifi",
     "khóa học",
-    "khóa học miễn phí",
     "khôi phục",
     "khôi phục bài viết",
     "khu vực gần trường",
     "kinh nghiệm",
-    "kinh nghiệm học",
-    "kinh nghiệm làm bài thuyết trình",
     "laptop cũ",
-    "laptop dell cũ",
     "lập đội",
     "lập đội chơi",
     "lập trình",
     "lập trình python",
     "lập trình web",
-    "lỗi không mở được file pdf",
-    "lỗi màn hình xanh windows",
+    "lệnh in",
     "lỗi màn hình xanh",
     "lỗi đăng nhập",
-    "lỗi khi chạy chương trình",
-    "lời giải bài tập lập trình python",
+    "lỗi khi chạy",
     "lời giải",
-    "mạng máy tính",
     "mạng máy tính",
     "màn hình",
     "màn hình máy tính",
-    "màn hình máy tính 24 inch",
     "màn hình xanh",
     "mất kết nối wifi",
     "mật khẩu",
     "máy tính",
     "máy tính cũ",
-    "máy tính bị mất kết nối wifi",
-    "máy tính không nghe được âm thanh",
-    "máy tính xanh windows",
-    "môi trường học lập trình web",
     "môi trường lập trình",
-    "môi trường lập trình web",
     "môi trường",
+    "miễn phí",
     "mới ra rạp",
     "mới dùng vài lần",
-    "mua bàn phím cơ",
-    "mua sách",
-    "mua sách lập trình python",
-    "mua chuột không dây",
     "mua bán",
-    "nhạc sống",
     "nhận sạc",
+    "nhận lệnh in",
     "nhẹ nhàng",
     "nhạc sống",
     "ngôn ngữ",
     "ngôn ngữ tự nhiên",
     "người mới",
-    "người mới bắt đầu",
     "nguyên nhân",
     "nội dung",
-    "nội dung khá hay",
-    "ôn thi cơ sở dữ liệu",
     "ôn tập",
     "ôn tập lý thuyết",
     "ôn thi",
     "pin còn khỏe",
     "phân loại",
     "phân loại nội dung",
-    "phân loại nội dung bài đăng",
     "phím cơ",
     "phim hài",
-    "phim hài nhẹ nhàng",
     "phim hay",
     "phim mới",
-    "phim mới ra rạp",
-    "phù hợp học tập",
     "qua sử dụng",
     "quán cà phê",
     "rất vui",
     "sách lập trình",
-    "sách lập trình python",
     "sau giờ học",
     "sau giờ làm",
     "sinh viên",
     "sự kiện cosplay",
     "tài khoản",
-    "tài khoản không đăng nhập được",
-    "tài liệu",
-    "tài liệu cơ sở dữ liệu",
-    "tài liệu học python",
-    "tài liệu ôn thi",
-    "tài liệu xử lý ngôn ngữ tự nhiên",
-    "sinh viên",
-    "tài khoản",
     "tài liệu",
     "tai nghe",
     "tai nghe bluetooth",
-    "tai nghe còn bảo hành",
-    "tai nghe còn bảo hành âm thanh tốt",
     "thanh lý",
-    "thanh lý balo laptop",
     "thanh lý tai nghe",
     "thao tác",
     "thủ tục",
-    "thủ tục xin giấy xác nhận sinh viên",
     "thương mại",
     "thuyết trình",
     "thú vị",
     "tiếng anh",
     "tối nay",
     "trình duyệt",
-    "trình duyệt không tải được ảnh",
-    "trí tuệ nhân tạo",
     "trí tuệ nhân tạo",
     "trung tâm",
     "trung tâm thương mại",
@@ -250,32 +199,28 @@ SEMANTIC_PHRASES = {
     "ưu tiên",
     "văn bản",
     "văn bản mẫu",
-    "web bằng python",
     "windows",
     "xác nhận sinh viên",
     "xác suất",
-    "xác suất từng nhóm",
     "xanh windows",
     "xem phim",
     "xem phim hài",
-    "xử lý file pdf",
     "xử lý",
     "xử lý ngôn ngữ tự nhiên",
     "xử lý văn bản",
     "xóa nhầm",
     "âm nhạc miễn phí",
-    "bài giảng cơ sở dữ liệu",
     "bài tập thuật toán",
     "bàn học gỗ",
     "bàn phím không dây",
-    "bàn phím không gõ được tiếng việt",
     "bảo mật",
     "bộ phim kinh dị",
-    "ca nhạc ở công viên",
     "chứng chỉ bảo mật",
-    "combo chuột và bàn phím",
+    "chứng chỉ",
     "diễn đàn",
+    "diễn đàn bị khóa",
     "dung lượng cao",
+    "dưới năm triệu",
     "dễ đọc",
     "dễ hiểu",
     "đồ án python",
@@ -283,63 +228,58 @@ SEMANTIC_PHRASES = {
     "giá dưới năm triệu",
     "giá hợp lý",
     "giải bóng đá sinh viên",
-    "giáo trình trí tuệ nhân tạo",
     "hệ thống học tập",
+    "hệ thống",
     "học máy",
-    "học lập trình python",
     "học online",
-    "học python nâng cao",
+    "hướng đối tượng",
     "không gian đẹp",
     "không gửi được email",
-    "không kết nối được máy chiếu",
-    "không tải được tài liệu",
-    "không tải được file bài giảng",
+    "không dây",
+    "kinh dị",
     "liên quân",
     "loa bluetooth",
     "máy chiếu",
     "máy in",
     "máy in cũ",
-    "máy in không nhận lệnh in",
     "máy tính bảng",
-    "máy tính bảng cũ",
     "mật khẩu wifi",
     "mã xác nhận",
+    "mất kết nối",
     "mở lại",
-    "môn xử lý ngôn ngữ tự nhiên",
+    "mở được",
     "naive bayes",
     "ngoại hình đẹp",
     "nhạc nhẹ",
     "nhạc thư giãn",
     "nhóm học chung",
+    "nâng cao",
     "nhanh hết pin",
     "ổ cứng di động",
     "phân loại văn bản",
     "phim hoạt hình",
     "pin ảo",
     "pin ổn",
-    "playlist nhạc thư giãn",
     "phòng trọ sinh viên",
-    "sách cơ sở dữ liệu",
+    "phòng trọ",
     "sách thuật toán",
     "sắp xếp",
     "sự kiện âm nhạc",
-    "tài liệu học python nâng cao",
-    "tài liệu ôn thi lập trình hướng đối tượng",
-    "tài khoản diễn đàn bị khóa",
+    "sự kiện",
+    "âm nhạc",
     "tập huấn luyện",
     "thuật toán",
     "thuật toán sắp xếp",
-    "thuật toán sắp xếp và tìm kiếm",
     "thứ bảy",
     "tiếng việt",
     "tìm kiếm",
+    "tải được",
     "trà sữa",
     "truyện tranh",
     "truyện tranh hài",
     "tuần này",
     "từ đâu",
     "văn phòng",
-    "webcam học online",
     "đã qua sử dụng",
 }
 
@@ -379,6 +319,20 @@ ATOMIC_TERMS = {
     "windows",
 }
 
+PROTECTED_PHRASES = {
+    "24 inch",
+    "cơ sở dữ liệu",
+    "giải bóng đá sinh viên",
+    "giấy xác nhận sinh viên",
+    "mạng máy tính",
+    "màn hình máy tính",
+    "ngôn ngữ tự nhiên",
+    "ổ cứng di động",
+    "trí tuệ nhân tạo",
+    "trung tâm thương mại",
+    "xử lý ngôn ngữ tự nhiên",
+}
+
 def normalize_text(text):
     text = text.lower()
     text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
@@ -402,6 +356,45 @@ def build_phrase_dictionary(phrases):
 PHRASE_DICTIONARY, MAX_PHRASE_LENGTH = build_phrase_dictionary(SEMANTIC_PHRASES)
 
 
+def is_semantic_unit(words):
+    term = " ".join(words)
+    return (
+        term in STOP_WORDS
+        or term in ATOMIC_TERMS
+        or tuple(words) in PHRASE_DICTIONARY
+    )
+
+
+def split_into_smaller_units(words):
+    phrase = " ".join(words)
+    if len(words) <= 2 or phrase in PROTECTED_PHRASES:
+        return None
+
+    result = []
+    index = 0
+
+    while index < len(words):
+        matched = None
+        max_length = min(len(words) - index, len(words) - 1)
+
+        for length in range(max_length, 0, -1):
+            candidate = words[index : index + length]
+            candidate_text = " ".join(candidate)
+            if candidate_text == phrase:
+                continue
+            if is_semantic_unit(candidate):
+                matched = candidate_text
+                break
+
+        if matched is None:
+            return None
+
+        result.append(matched)
+        index += len(matched.split())
+
+    return result if len(result) > 1 else None
+
+
 def maximum_matching_segment(words):
     segmented = []
     index = 0
@@ -420,7 +413,11 @@ def maximum_matching_segment(words):
             segmented.append(words[index])
             index += 1
         else:
-            segmented.append(" ".join(matched))
+            smaller_units = split_into_smaller_units(list(matched))
+            if smaller_units is None:
+                segmented.append(" ".join(matched))
+            else:
+                segmented.extend(smaller_units)
             index += len(matched)
 
     return segmented
@@ -565,27 +562,25 @@ def classify_text(text, model=None):
 
     for category in sorted(CATEGORY_NAMES):
         prior = model["category_document_count"][category] / model["document_count"]
-        score = math.log(prior)
+        score = prior
         total_words = model["category_word_count"][category]
         word_frequency = model["category_word_frequency"][category]
 
         for word in words:
             word_count = word_frequency.get(word, 0)
             probability = (word_count + 1) / (total_words + vocabulary_size)
-            score += math.log(probability)
+            score *= probability
 
         scores.append((category, score))
 
-    max_score = max(score for _, score in scores)
-    exp_scores = [(category, math.exp(score - max_score)) for category, score in scores]
-    total_exp = sum(score for _, score in exp_scores)
+    total_score = sum(score for _, score in scores)
     probabilities = [
         {
             "category": category,
             "name": CATEGORY_NAMES[category],
-            "probability": score / total_exp,
+            "probability": score / total_score if total_score else 0,
         }
-        for category, score in exp_scores
+        for category, score in scores
     ]
     probabilities.sort(key=lambda item: item["probability"], reverse=True)
 
