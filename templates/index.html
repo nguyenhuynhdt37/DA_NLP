@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Phân loại bài đăng diễn đàn</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="topbar">
+        <div>
+            <p>Nhóm 11</p>
+            <h1>Đề tài: Hệ thống phân loại nội dung bài đăng diễn đàn</h1>
+        </div>
+        <span class="badge">Tự cài đặt xử lý NLP</span>
+    </header>
+
+    <main class="layout">
+        <section class="workspace">
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Tổng quan dữ liệu</h2>
+                </div>
+                <div class="stats overview-stats">
+                    <div><span>Văn bản mẫu</span><strong>{{ samples | length }}</strong></div>
+                    <div><span>Dữ liệu huấn luyện</span><strong>{{ training_summary.document_count }}</strong></div>
+                    <div><span>Số nhãn</span><strong>{{ training_summary.category_count }}</strong></div>
+                    <div><span>Từ/cụm đặc trưng</span><strong>{{ training_summary.vocabulary_size }}</strong></div>
+                </div>
+                <div class="pipeline">
+                    <span>Chuẩn hóa</span>
+                    <span>Tách từ/cụm</span>
+                    <span>Đếm tần suất</span>
+                    <span>Naive Bayes</span>
+                    <span>Dự đoán nhãn</span>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Đánh giá mô hình</h2>
+                    <span class="mini-badge">{{ evaluation.method }}</span>
+                </div>
+                <div class="stats evaluation-stats">
+                    <div><span>Độ chính xác</span><strong>{{ (evaluation.accuracy * 100) | round(2) }}%</strong></div>
+                    <div><span>Dự đoán đúng</span><strong>{{ evaluation.correct }}/{{ evaluation.total }}</strong></div>
+                    <div><span>Dự đoán sai</span><strong>{{ evaluation.incorrect }}</strong></div>
+                </div>
+                <div class="score-grid">
+                    {% for item in evaluation.category_scores %}
+                    <div>
+                        <strong>{{ item.name }}</strong>
+                        <span>Precision {{ (item.precision * 100) | round(1) }}%</span>
+                        <span>Recall {{ (item.recall * 100) | round(1) }}%</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="table-wrap compact-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Thực tế \ Dự đoán</th>
+                                {% for predicted in evaluation.categories %}
+                                <th>{{ predicted.name }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for actual in evaluation.categories %}
+                            <tr>
+                                <th>{{ actual.name }}</th>
+                                {% for predicted in evaluation.categories %}
+                                <td>{{ evaluation.confusion[actual.category][predicted.category] }}</td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <form method="post" action="{{ url_for('index') }}" class="composer">
+                <label for="text">Nội dung bài đăng</label>
+                <textarea id="text" name="text" rows="7" placeholder="Nhập một bài đăng diễn đàn...">{{ text_value }}</textarea>
+                <button type="submit">Phân tích và phân loại</button>
+            </form>
+
+            {% if analysis %}
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Phân tích văn bản</h2>
+                </div>
+                <div class="stats">
+                    <div><span>Độ dài</span><strong>{{ analysis.character_count }}</strong></div>
+                    <div><span>Số từ/cụm</span><strong>{{ analysis.word_count }}</strong></div>
+                    <div><span>Từ/cụm khác nhau</span><strong>{{ analysis.unique_word_count }}</strong></div>
+                </div>
+                <div class="field-result">
+                    <span>Văn bản chuẩn hóa</span>
+                    <p>{{ analysis.normalized }}</p>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Từ/Cụm từ</th>
+                                <th>Tần suất</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for word, count in analysis.frequency %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ word }}</td>
+                                <td>{{ count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            {% endif %}
+
+            {% if classification %}
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Kết quả phân loại</h2>
+                </div>
+                <div class="prediction">
+                    <span>Nhãn dự đoán</span>
+                    <strong>{{ classification.name }}</strong>
+                    <small>Độ tin cậy: {{ (classification.probability * 100) | round(2) }}%</small>
+                </div>
+                <div class="probabilities">
+                    {% for item in classification.probabilities %}
+                    {% set percent = (item.probability * 100) | round(2) %}
+                    <div class="probability-row">
+                        <div class="probability-label">
+                            <span>{{ item.name }}</span>
+                            <strong>{{ percent }}%</strong>
+                        </div>
+                        <div class="bar"><span style="width: {{ percent }}%"></span></div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="field-result compact">
+                    <span>Từ/cụm trùng với tập đặc trưng</span>
+                    <p>
+                        {% if classification.matched_words %}
+                            {{ classification.matched_words | join(", ") }}
+                        {% else %}
+                            Không có
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="explain-grid">
+                    <div class="field-result compact">
+                        <span>Tách từ/cụm theo ngữ nghĩa</span>
+                        <p>{{ classification.segmented_words | join(" / ") }}</p>
+                    </div>
+                    <div class="field-result compact">
+                        <span>Đặc trưng dùng tính xác suất</span>
+                        <p>{{ classification.words | join(" / ") }}</p>
+                    </div>
+                </div>
+                <div class="table-wrap compact-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Bằng chứng cho nhãn {{ classification.name }}</th>
+                                <th>Tần suất trong nhóm</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in classification.evidence_words %}
+                            <tr>
+                                <td>{{ item.word }}</td>
+                                <td>{{ item.count }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="2">Không có từ/cụm nổi bật trong tập huấn luyện</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            {% endif %}
+        </section>
+
+        <aside class="side">
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Văn bản mẫu</h2>
+                </div>
+                <div class="samples">
+                    {% for sample in samples %}
+                    <a class="sample{% if selected_index == loop.index0 %} active{% endif %}" href="{{ url_for('index', sample=loop.index0) }}">
+                        <strong>{{ loop.index }}</strong>
+                        <span>{{ sample }}</span>
+                    </a>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Phân bố nhãn</h2>
+                </div>
+                <ul class="feature-list label-list">
+                    {% for item in training_summary.categories %}
+                    <li>
+                        <span>{{ item.name }}</span>
+                        <strong>{{ item.document_count }}</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Từ/cụm đặc trưng</h2>
+                </div>
+                <ul class="feature-list">
+                    {% for word, count in feature_words %}
+                    <li><span>{{ word }}</span><strong>{{ count }}</strong></li>
+                    {% endfor %}
+                </ul>
+            </section>
+
+            <section class="panel">
+                <div class="panel-header">
+                    <h2>Đặc trưng theo nhãn</h2>
+                </div>
+                <div class="category-features">
+                    {% for category in category_feature_words %}
+                    <div>
+                        <strong>{{ category.name }}</strong>
+                        <p>
+                            {% for word, count in category.words %}
+                            <span>{{ word }} <b>{{ count }}</b></span>
+                            {% endfor %}
+                        </p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </aside>
+
+        <section class="panel training">
+            <div class="panel-header">
+                <h2>Tập dữ liệu mẫu</h2>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Nhãn</th>
+                            <th>Văn bản</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for category, text in training_data %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ category_names[category] }}</td>
+                            <td>{{ text }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
