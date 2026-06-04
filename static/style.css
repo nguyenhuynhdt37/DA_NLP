@@ -315,6 +315,11 @@ th {
     color: var(--muted);
 }
 
+.prediction p {
+    margin: 10px 0 0;
+    line-height: 1.55;
+}
+
 .probabilities {
     display: grid;
     gap: 14px;

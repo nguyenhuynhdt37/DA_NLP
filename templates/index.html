@@ -131,6 +131,7 @@
                     <span>Nhãn dự đoán</span>
                     <strong>{{ classification.name }}</strong>
                     <small>Độ tin cậy: {{ (classification.probability * 100) | round(2) }}%</small>
+                    <p>{{ classification.comment }}</p>
                 </div>
                 <div class="probabilities">
                     {% for item in classification.probabilities %}

@@ -1,5 +1,6 @@
 import re
 from collections import Counter
+from typing import Any
 
 from data import CATEGORY_NAMES, TRAINING_DATA
 
@@ -319,15 +320,15 @@ ATOMIC_TERMS = {
     "windows",
 }
 
-def normalize_text(text):
+def normalize_text(text: str) -> str:
     text = text.lower()
     text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
     text = re.sub(r"\s+", " ", text)
     return text.strip()
 
 
-def build_phrase_dictionary(phrases):
-    phrase_words = set()
+def build_phrase_dictionary(phrases: set[str]) -> tuple[set[tuple[str, ...]], int]:
+    phrase_words: set[tuple[str, ...]] = set()
     max_length = 1
 
     for phrase in phrases:
@@ -342,16 +343,19 @@ def build_phrase_dictionary(phrases):
 PHRASE_DICTIONARY, MAX_PHRASE_LENGTH = build_phrase_dictionary(SEMANTIC_PHRASES)
 
 
-def get_categories():
+def get_categories() -> list[str]:
     return sorted(CATEGORY_NAMES)
 
 
-def sort_word_counts(word_counts, limit=None):
+def sort_word_counts(
+    word_counts: Counter[str],
+    limit: int | None = None,
+) -> list[tuple[str, int]]:
     sorted_items = sorted(word_counts.items(), key=lambda item: (-item[1], item[0]))
     return sorted_items[:limit] if limit else sorted_items
 
 
-def find_longest_phrase(words, start_index):
+def find_longest_phrase(words: list[str], start_index: int) -> tuple[str, ...] | None:
     remaining = len(words) - start_index
     max_length = min(MAX_PHRASE_LENGTH, remaining)
 
@@ -363,8 +367,8 @@ def find_longest_phrase(words, start_index):
     return None
 
 
-def maximum_matching_segment(words):
-    segmented = []
+def maximum_matching_segment(words: list[str]) -> list[str]:
+    segmented: list[str] = []
     index = 0
 
     while index < len(words):
@@ -380,18 +384,18 @@ def maximum_matching_segment(words):
     return segmented
 
 
-def split_words(text, remove_stop_words=False):
+def split_words(text: str, remove_stop_words: bool = False) -> list[str]:
     words = maximum_matching_segment(normalize_text(text).split())
     if remove_stop_words:
         words = [word for word in words if word not in STOP_WORDS]
     return words
 
 
-def expand_feature_terms(words):
-    expanded = []
-    seen = set()
+def expand_feature_terms(words: list[str]) -> list[str]:
+    expanded: list[str] = []
+    seen: set[str] = set()
 
-    def add_term(term):
+    def add_term(term: str) -> None:
         if term and term not in seen and term not in STOP_WORDS:
             seen.add(term)
             expanded.append(term)
@@ -413,20 +417,20 @@ def expand_feature_terms(words):
     return expanded
 
 
-def extract_model_words(text):
+def extract_model_words(text: str) -> list[str]:
     words = split_words(text, remove_stop_words=True)
     return expand_feature_terms(words)
 
 
-def count_words(text):
+def count_words(text: str) -> int:
     return len(split_words(text))
 
 
-def count_word_frequency(text, remove_stop_words=False):
+def count_word_frequency(text: str, remove_stop_words: bool = False) -> Counter[str]:
     return Counter(split_words(text, remove_stop_words=remove_stop_words))
 
 
-def analyze_text(text):
+def analyze_text(text: str) -> dict[str, Any]:
     frequency = count_word_frequency(text)
 
     return {
@@ -439,7 +443,7 @@ def analyze_text(text):
     }
 
 
-def build_model(training_data):
+def build_model(training_data: list[tuple[str, str]]) -> dict[str, Any]:
     category_document_count = Counter()
     category_word_count = Counter()
     category_word_frequency = {}
@@ -464,8 +468,8 @@ def build_model(training_data):
 MODEL = build_model(TRAINING_DATA)
 
 
-def get_training_summary():
-    category_summary = []
+def get_training_summary() -> dict[str, Any]:
+    category_summary: list[dict[str, Any]] = []
     for category in get_categories():
         document_count = MODEL["category_document_count"][category]
         word_count = MODEL["category_word_count"][category]
@@ -486,15 +490,15 @@ def get_training_summary():
     }
 
 
-def extract_feature_words(limit=30):
+def extract_feature_words(limit: int = 30) -> list[tuple[str, int]]:
     all_words = Counter()
     for frequency in MODEL["category_word_frequency"].values():
         all_words.update(frequency)
     return sort_word_counts(all_words, limit)
 
 
-def extract_category_feature_words(limit=8):
-    result = []
+def extract_category_feature_words(limit: int = 8) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
     for category in get_categories():
         frequency = MODEL["category_word_frequency"][category]
         words = sort_word_counts(frequency, limit)
@@ -508,7 +512,11 @@ def extract_category_feature_words(limit=8):
     return result
 
 
-def calculate_category_score(category, words, model):
+def calculate_category_score(
+    category: str,
+    words: list[str],
+    model: dict[str, Any],
+) -> float:
     prior = model["category_document_count"][category] / model["document_count"]
     score = prior
     total_words = model["category_word_count"][category]
@@ -523,7 +531,7 @@ def calculate_category_score(category, words, model):
     return score
 
 
-def build_probabilities(scores):
+def build_probabilities(scores: list[tuple[str, float]]) -> list[dict[str, Any]]:
     total_score = sum(score for _, score in scores)
     probabilities = []
 
@@ -541,7 +549,12 @@ def build_probabilities(scores):
     return probabilities
 
 
-def get_evidence_words(words, predicted_category, model, limit=10):
+def get_evidence_words(
+    words: list[str],
+    predicted_category: str,
+    model: dict[str, Any],
+    limit: int = 10,
+) -> list[dict[str, Any]]:
     word_frequency = model["category_word_frequency"][predicted_category]
     matched_words = sorted(set(words) & model["vocabulary"])
     evidence_words = []
@@ -555,7 +568,32 @@ def get_evidence_words(words, predicted_category, model, limit=10):
     return evidence_words[:limit]
 
 
-def classify_text(text, model=None):
+def build_prediction_comment(
+    predicted_name: str,
+    probability: float,
+    evidence_words: list[dict[str, Any]],
+) -> str:
+    if probability >= 0.8:
+        confidence_text = "độ tin cậy cao"
+    elif probability >= 0.5:
+        confidence_text = "độ tin cậy trung bình"
+    else:
+        confidence_text = "độ tin cậy thấp"
+
+    if evidence_words:
+        evidence_text = ", ".join(item["word"] for item in evidence_words[:3])
+        return (
+            f"Văn bản được xếp vào nhóm {predicted_name} với {confidence_text}, "
+            f"do có các từ/cụm nổi bật: {evidence_text}."
+        )
+
+    return (
+        f"Văn bản được xếp vào nhóm {predicted_name} với {confidence_text}, "
+        "nhưng có ít từ/cụm trùng với tập dữ liệu mẫu."
+    )
+
+
+def classify_text(text: str, model: dict[str, Any] | None = None) -> dict[str, Any]:
     model = model or MODEL
     segmented_words = split_words(text)
     filtered_words = split_words(text, remove_stop_words=True)
@@ -581,11 +619,16 @@ def classify_text(text, model=None):
         "words": words,
         "matched_words": matched_words,
         "evidence_words": evidence_words,
+        "comment": build_prediction_comment(
+            best["name"],
+            best["probability"],
+            evidence_words,
+        ),
     }
 
 
-def create_confusion_matrix(categories):
-    confusion = {}
+def create_confusion_matrix(categories: list[str]) -> dict[str, dict[str, int]]:
+    confusion: dict[str, dict[str, int]] = {}
 
     for actual_category in categories:
         confusion[actual_category] = {}
@@ -595,8 +638,11 @@ def create_confusion_matrix(categories):
     return confusion
 
 
-def calculate_category_scores(confusion, categories):
-    category_scores = []
+def calculate_category_scores(
+    confusion: dict[str, dict[str, int]],
+    categories: list[str],
+) -> list[dict[str, Any]]:
+    category_scores: list[dict[str, Any]] = []
 
     for category in categories:
         correct_count = confusion[category][category]
@@ -622,8 +668,8 @@ def calculate_category_scores(confusion, categories):
     return category_scores
 
 
-def evaluate_training_data():
-    categories = sorted(CATEGORY_NAMES)
+def evaluate_training_data() -> dict[str, Any]:
+    categories = get_categories()
     confusion = create_confusion_matrix(categories)
     results = []
     correct = 0

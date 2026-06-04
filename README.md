@@ -38,15 +38,6 @@ Mo trinh duyet tai:
 http://127.0.0.1:8001
 ```
 
-## Chay bao cao terminal
-
-Lenh nay in ra dung cac thong ke co ban trong de bai: so luong van ban, so tu tung van ban, tan suat tu, tap du lieu co nhan, tu/cum dac trung va demo phan loai.
-Bao cao cung co muc debug tach tu/cum, tu/cum dac trung theo tung nhan, danh gia leave-one-out va ma tran nham lan.
-
-```powershell
-.\venv\Scripts\python.exe report.py
-```
-
 ## Thu vien su dung
 
 - Flask: tao web.
@@ -58,7 +49,6 @@ Bao cao cung co muc debug tach tu/cum, tu/cum dac trung theo tung nhan, danh gia
 app.py                 Server web bang Flask
 data.py                Van ban mau va tap du lieu huan luyen
 text_processing.py     Chuan hoa, tach tu bang tu dien, dem tan suat, Naive Bayes tu cai dat
-report.py              In thong ke va ket qua phan loai ra terminal
 templates/index.html   Giao dien HTML
 static/style.css       CSS
 requirements.txt       Thu vien can cai
@@ -105,7 +95,7 @@ requirements.txt       Thu vien can cai
 | Yeu cau | Trang thai |
 |---|---|
 | Khai bao it nhat 10 van ban | Dat: co 16 van ban mau |
-| In ra so luong van ban | Dat: giao dien va `report.py` |
+| In ra so luong van ban | Dat: giao dien web |
 | Dem so tu trong tung van ban | Dat |
 | Chuan hoa van ban ve chu thuong | Dat |
 | Loai bo dau cau/khoang trang thua | Dat |
