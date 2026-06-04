@@ -15,7 +15,7 @@ Du lieu mau hien co:
 
 - 16 van ban mau de thu nhanh tren giao dien.
 - 108 van ban huan luyen co nhan, moi nhan co 27 van ban.
-- 321 tu/cum trong tap tu vung dac trung sau tien xu ly.
+- 348 tu/cum trong tap tu vung dac trung sau tien xu ly.
 - 236 cum tu trong tu dien ngu nghia va 33 tu don dac trung de ho tro fallback.
 
 ## Cai dat

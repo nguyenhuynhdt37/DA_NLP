@@ -319,20 +319,6 @@ ATOMIC_TERMS = {
     "windows",
 }
 
-PROTECTED_PHRASES = {
-    "24 inch",
-    "cơ sở dữ liệu",
-    "giải bóng đá sinh viên",
-    "giấy xác nhận sinh viên",
-    "mạng máy tính",
-    "màn hình máy tính",
-    "ngôn ngữ tự nhiên",
-    "ổ cứng di động",
-    "trí tuệ nhân tạo",
-    "trung tâm thương mại",
-    "xử lý ngôn ngữ tự nhiên",
-}
-
 def normalize_text(text):
     text = text.lower()
     text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
@@ -356,43 +342,25 @@ def build_phrase_dictionary(phrases):
 PHRASE_DICTIONARY, MAX_PHRASE_LENGTH = build_phrase_dictionary(SEMANTIC_PHRASES)
 
 
-def is_semantic_unit(words):
-    term = " ".join(words)
-    return (
-        term in STOP_WORDS
-        or term in ATOMIC_TERMS
-        or tuple(words) in PHRASE_DICTIONARY
-    )
+def get_categories():
+    return sorted(CATEGORY_NAMES)
 
 
-def split_into_smaller_units(words):
-    phrase = " ".join(words)
-    if len(words) <= 2 or phrase in PROTECTED_PHRASES:
-        return None
+def sort_word_counts(word_counts, limit=None):
+    sorted_items = sorted(word_counts.items(), key=lambda item: (-item[1], item[0]))
+    return sorted_items[:limit] if limit else sorted_items
 
-    result = []
-    index = 0
 
-    while index < len(words):
-        matched = None
-        max_length = min(len(words) - index, len(words) - 1)
+def find_longest_phrase(words, start_index):
+    remaining = len(words) - start_index
+    max_length = min(MAX_PHRASE_LENGTH, remaining)
 
-        for length in range(max_length, 0, -1):
-            candidate = words[index : index + length]
-            candidate_text = " ".join(candidate)
-            if candidate_text == phrase:
-                continue
-            if is_semantic_unit(candidate):
-                matched = candidate_text
-                break
+    for length in range(max_length, 1, -1):
+        candidate = tuple(words[start_index : start_index + length])
+        if candidate in PHRASE_DICTIONARY:
+            return candidate
 
-        if matched is None:
-            return None
-
-        result.append(matched)
-        index += len(matched.split())
-
-    return result if len(result) > 1 else None
+    return None
 
 
 def maximum_matching_segment(words):
@@ -400,25 +368,14 @@ def maximum_matching_segment(words):
     index = 0
 
     while index < len(words):
-        max_length = min(MAX_PHRASE_LENGTH, len(words) - index)
-        matched = None
-
-        for length in range(max_length, 1, -1):
-            candidate = tuple(words[index : index + length])
-            if candidate in PHRASE_DICTIONARY:
-                matched = candidate
-                break
-
-        if matched is None:
+        phrase = find_longest_phrase(words, index)
+        if phrase is None:
             segmented.append(words[index])
             index += 1
-        else:
-            smaller_units = split_into_smaller_units(list(matched))
-            if smaller_units is None:
-                segmented.append(" ".join(matched))
-            else:
-                segmented.extend(smaller_units)
-            index += len(matched)
+            continue
+
+        segmented.append(" ".join(phrase))
+        index += len(phrase)
 
     return segmented
 
@@ -456,6 +413,11 @@ def expand_feature_terms(words):
     return expanded
 
 
+def extract_model_words(text):
+    words = split_words(text, remove_stop_words=True)
+    return expand_feature_terms(words)
+
+
 def count_words(text):
     return len(split_words(text))
 
@@ -466,10 +428,6 @@ def count_word_frequency(text, remove_stop_words=False):
 
 def analyze_text(text):
     frequency = count_word_frequency(text)
-    sorted_frequency = sorted(
-        frequency.items(),
-        key=lambda item: (-item[1], item[0]),
-    )
 
     return {
         "original": text,
@@ -477,7 +435,7 @@ def analyze_text(text):
         "character_count": len(text),
         "word_count": count_words(text),
         "unique_word_count": len(frequency),
-        "frequency": sorted_frequency,
+        "frequency": sort_word_counts(frequency),
     }
 
 
@@ -489,11 +447,9 @@ def build_model(training_data):
 
     for category, text in training_data:
         category_document_count[category] += 1
-        words = expand_feature_terms(split_words(text, remove_stop_words=True))
+        words = extract_model_words(text)
         vocabulary.update(words)
-        if category not in category_word_frequency:
-            category_word_frequency[category] = Counter()
-        category_word_frequency[category].update(words)
+        category_word_frequency.setdefault(category, Counter()).update(words)
         category_word_count[category] += len(words)
 
     return {
@@ -510,7 +466,7 @@ MODEL = build_model(TRAINING_DATA)
 
 def get_training_summary():
     category_summary = []
-    for category in sorted(CATEGORY_NAMES):
+    for category in get_categories():
         document_count = MODEL["category_document_count"][category]
         word_count = MODEL["category_word_count"][category]
         category_summary.append(
@@ -534,14 +490,14 @@ def extract_feature_words(limit=30):
     all_words = Counter()
     for frequency in MODEL["category_word_frequency"].values():
         all_words.update(frequency)
-    return sorted(all_words.items(), key=lambda item: (-item[1], item[0]))[:limit]
+    return sort_word_counts(all_words, limit)
 
 
 def extract_category_feature_words(limit=8):
     result = []
-    for category in sorted(CATEGORY_NAMES):
+    for category in get_categories():
         frequency = MODEL["category_word_frequency"][category]
-        words = sorted(frequency.items(), key=lambda item: (-item[1], item[0]))[:limit]
+        words = sort_word_counts(frequency, limit)
         result.append(
             {
                 "category": category,
@@ -552,52 +508,68 @@ def extract_category_feature_words(limit=8):
     return result
 
 
+def calculate_category_score(category, words, model):
+    prior = model["category_document_count"][category] / model["document_count"]
+    score = prior
+    total_words = model["category_word_count"][category]
+    word_frequency = model["category_word_frequency"][category]
+    vocabulary_size = max(len(model["vocabulary"]), 1)
+
+    for word in words:
+        word_count = word_frequency.get(word, 0)
+        probability = (word_count + 1) / (total_words + vocabulary_size)
+        score *= probability
+
+    return score
+
+
+def build_probabilities(scores):
+    total_score = sum(score for _, score in scores)
+    probabilities = []
+
+    for category, score in scores:
+        probability = score / total_score if total_score else 0
+        probabilities.append(
+            {
+                "category": category,
+                "name": CATEGORY_NAMES[category],
+                "probability": probability,
+            }
+        )
+
+    probabilities.sort(key=lambda item: item["probability"], reverse=True)
+    return probabilities
+
+
+def get_evidence_words(words, predicted_category, model, limit=10):
+    word_frequency = model["category_word_frequency"][predicted_category]
+    matched_words = sorted(set(words) & model["vocabulary"])
+    evidence_words = []
+
+    for word in matched_words:
+        count = word_frequency.get(word, 0)
+        if count > 0:
+            evidence_words.append({"word": word, "count": count})
+
+    evidence_words.sort(key=lambda item: (-item["count"], item["word"]))
+    return evidence_words[:limit]
+
+
 def classify_text(text, model=None):
     model = model or MODEL
     segmented_words = split_words(text)
     filtered_words = split_words(text, remove_stop_words=True)
     words = expand_feature_terms(filtered_words)
-    vocabulary_size = max(len(model["vocabulary"]), 1)
     scores = []
 
-    for category in sorted(CATEGORY_NAMES):
-        prior = model["category_document_count"][category] / model["document_count"]
-        score = prior
-        total_words = model["category_word_count"][category]
-        word_frequency = model["category_word_frequency"][category]
-
-        for word in words:
-            word_count = word_frequency.get(word, 0)
-            probability = (word_count + 1) / (total_words + vocabulary_size)
-            score *= probability
-
+    for category in get_categories():
+        score = calculate_category_score(category, words, model)
         scores.append((category, score))
 
-    total_score = sum(score for _, score in scores)
-    probabilities = [
-        {
-            "category": category,
-            "name": CATEGORY_NAMES[category],
-            "probability": score / total_score if total_score else 0,
-        }
-        for category, score in scores
-    ]
-    probabilities.sort(key=lambda item: item["probability"], reverse=True)
-
+    probabilities = build_probabilities(scores)
     best = probabilities[0]
-    best_frequency = model["category_word_frequency"][best["category"]]
     matched_words = sorted(set(words) & model["vocabulary"])
-    evidence_words = sorted(
-        [
-            {
-                "word": word,
-                "count": best_frequency[word],
-            }
-            for word in matched_words
-            if best_frequency.get(word, 0) > 0
-        ],
-        key=lambda item: (-item["count"], item["word"]),
-    )[:10]
+    evidence_words = get_evidence_words(words, best["category"], model)
 
     return {
         "category": best["category"],
@@ -612,24 +584,60 @@ def classify_text(text, model=None):
     }
 
 
+def create_confusion_matrix(categories):
+    confusion = {}
+
+    for actual_category in categories:
+        confusion[actual_category] = {}
+        for predicted_category in categories:
+            confusion[actual_category][predicted_category] = 0
+
+    return confusion
+
+
+def calculate_category_scores(confusion, categories):
+    category_scores = []
+
+    for category in categories:
+        correct_count = confusion[category][category]
+        actual_total = sum(confusion[category].values())
+        predicted_total = 0
+
+        for actual_category in categories:
+            predicted_total += confusion[actual_category][category]
+
+        precision = correct_count / predicted_total if predicted_total else 0
+        recall = correct_count / actual_total if actual_total else 0
+        category_scores.append(
+            {
+                "category": category,
+                "name": CATEGORY_NAMES[category],
+                "precision": precision,
+                "recall": recall,
+                "correct": correct_count,
+                "total": actual_total,
+            }
+        )
+
+    return category_scores
+
+
 def evaluate_training_data():
     categories = sorted(CATEGORY_NAMES)
-    confusion = {
-        actual: {predicted: 0 for predicted in categories}
-        for actual in categories
-    }
+    confusion = create_confusion_matrix(categories)
     results = []
     correct = 0
 
     for index, (actual_category, text) in enumerate(TRAINING_DATA):
-        fold_training_data = TRAINING_DATA[:index] + TRAINING_DATA[index + 1 :]
-        fold_model = build_model(fold_training_data)
-        prediction = classify_text(text, model=fold_model)
+        training_without_current_text = TRAINING_DATA[:index] + TRAINING_DATA[index + 1 :]
+        model = build_model(training_without_current_text)
+        prediction = classify_text(text, model=model)
         predicted_category = prediction["category"]
         is_correct = predicted_category == actual_category
 
         if is_correct:
             correct += 1
+
         confusion[actual_category][predicted_category] += 1
         results.append(
             {
@@ -645,24 +653,6 @@ def evaluate_training_data():
         )
 
     total = len(TRAINING_DATA)
-    category_scores = []
-    for category in categories:
-        true_positive = confusion[category][category]
-        predicted_total = sum(confusion[actual][category] for actual in categories)
-        actual_total = sum(confusion[category].values())
-        precision = true_positive / predicted_total if predicted_total else 0
-        recall = true_positive / actual_total if actual_total else 0
-        category_scores.append(
-            {
-                "category": category,
-                "name": CATEGORY_NAMES[category],
-                "precision": precision,
-                "recall": recall,
-                "correct": true_positive,
-                "total": actual_total,
-            }
-        )
-
     return {
         "method": "Leave-one-out",
         "total": total,
@@ -674,6 +664,6 @@ def evaluate_training_data():
             for category in categories
         ],
         "confusion": confusion,
-        "category_scores": category_scores,
+        "category_scores": calculate_category_scores(confusion, categories),
         "results": results,
     }
