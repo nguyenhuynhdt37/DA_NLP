@@ -1,3 +1,29 @@
+
+# Đồ án 11: Hệ thống phân loại nội dung bài đăng diễn đàn
+
+## Phần 1. Kiến thức lập trình Python cơ bản — 2 điểm
+
+- Khai báo hoặc nhập danh sách ít nhất 10 văn bản/câu ngắn phù hợp với bài toán.
+- In ra số lượng văn bản trong danh sách.
+- Đếm số từ trong từng văn bản.
+- Viết hàm chuẩn hóa văn bản về chữ thường.
+- Viết hàm loại bỏ dấu câu hoặc khoảng trắng thừa.
+- Viết hàm đếm tần suất từ trong một văn bản và in kết quả.
+
+## Phần 2. Bài toán ứng dụng xử lý ngôn ngữ tự nhiên — 8 điểm
+
+Một diễn đàn trực tuyến muốn phân loại bài đăng của người dùng vào các chuyên mục như học tập, giải trí, hỏi đáp hoặc mua bán.
+
+- Chuẩn bị tập dữ liệu nhỏ gồm văn bản mẫu và nhãn/nhóm tương ứng.
+- Nhập hoặc khai báo một văn bản mới cần xử lý.
+- Tiền xử lý văn bản: chuẩn hóa chữ thường, xóa dấu câu, xóa khoảng trắng thừa, tách từ.
+- Xây dựng danh sách từ đặc trưng từ tập dữ liệu mẫu.
+- Biểu diễn văn bản thành dạng dữ liệu có thể tính toán.
+- Tính điểm hoặc xác suất của văn bản mới đối với từng nhóm.
+- In ra điểm hoặc xác suất của từng nhóm.
+- In ra nhóm/nhãn được dự đoán và nhận xét ngắn gọn.
+- Không sử dụng thư viện học máy hoặc NLP có sẵn.
+
 # He thong phan loai noi dung bai dang dien dan
 
 Web demo dung Flask. Phan xu ly ngon ngu va phan loai duoc tu cai dat, khong dung thu vien ML/NLP co san.
@@ -38,6 +64,15 @@ Mo trinh duyet tai:
 http://127.0.0.1:8001
 ```
 
+## Chay bao cao terminal
+
+Lenh nay in ra dung cac thong ke co ban trong de bai: so luong van ban, so tu tung van ban, tan suat tu, tap du lieu co nhan, tu/cum dac trung va demo phan loai.
+Bao cao cung co muc debug tach tu/cum, tu/cum dac trung theo tung nhan, danh gia leave-one-out va ma tran nham lan.
+
+```powershell
+.\venv\Scripts\python.exe report.py
+```
+
 ## Thu vien su dung
 
 - Flask: tao web.
@@ -49,6 +84,7 @@ http://127.0.0.1:8001
 app.py                 Server web bang Flask
 data.py                Van ban mau va tap du lieu huan luyen
 text_processing.py     Chuan hoa, tach tu bang tu dien, dem tan suat, Naive Bayes tu cai dat
+report.py              In thong ke va ket qua phan loai ra terminal
 templates/index.html   Giao dien HTML
 static/style.css       CSS
 requirements.txt       Thu vien can cai
@@ -95,7 +131,7 @@ requirements.txt       Thu vien can cai
 | Yeu cau | Trang thai |
 |---|---|
 | Khai bao it nhat 10 van ban | Dat: co 16 van ban mau |
-| In ra so luong van ban | Dat: giao dien web |
+| In ra so luong van ban | Dat: giao dien va `report.py` |
 | Dem so tu trong tung van ban | Dat |
 | Chuan hoa van ban ve chu thuong | Dat |
 | Loai bo dau cau/khoang trang thua | Dat |
